@@ -113,7 +113,7 @@ def render():
         tab1, tab2 = st.tabs(["🚀 YOLO Detection", "🎭 PVT Segmentation"])
 
         with tab1:
-            st.info("Fast object detection & tracking (YOLOv8 + DeepSORT). Takes ~2 mins.")
+            st.info("Fast object detection & tracking (YOLOv8 + BoT-SORT). Takes ~2 mins.")
             if st.button("Run YOLO Detection", type="primary", use_container_width=True):
                 # Save input
                 tmp_input = os.path.join(BACKEND_DIR, "uploaded_input.mp4")

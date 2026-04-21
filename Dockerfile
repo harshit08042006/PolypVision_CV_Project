@@ -26,4 +26,4 @@ EXPOSE 7860
 
 # Command to run the Streamlit app
 # Note: --server.port 7860 is required for Hugging Face Docker Spaces
-CMD ["streamlit", "run", "PolypDetection_Streamlit_UI/app.py", "--server.port=7860", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "PolypDetection_Streamlit_UI/app.py", "--server.port=7860", "--server.address=0.0.0.0", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]

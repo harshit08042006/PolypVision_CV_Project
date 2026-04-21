@@ -99,10 +99,8 @@ def render():
         st.markdown(
             """
                 <div style="margin-top:16px;">
-                    <span class="mocked-note">⏱ Results shown in the next screen can be hardcoded for presentation.</span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-

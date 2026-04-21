@@ -9,11 +9,11 @@ pinned: false
 
 # PolypVision | Colonoscopy AI Assistant 🔬
 
-PolypVision is an end-to-end computer vision and healthcare application designed to detect and track colonoscopy polyps in real-time. It features a polished frontend UI built with Streamlit and a powerful object detection & tracking backend powered by YOLOv8 and DeepSORT.
+PolypVision is an end-to-end computer vision and healthcare application designed to detect and track colonoscopy polyps in real-time. It features a polished frontend UI built with Streamlit and a powerful object detection & tracking backend powered by YOLOv8 and BoT-SORT.
 
 ## Key Features 🚀
 - **Automated Polyp Detection**: Upload clinical colonoscopy videos (`.mp4`, `.avi`, etc.) and automatically run them through a custom-trained object detection pipeline.
-- **Robust Polyp Tracking**: Uses DeepSORT to maintain unique IDs for the same polyp across sequential video frames, reducing false double-counting.
+- **Robust Polyp Tracking**: Uses BoT-SORT to maintain unique IDs for the same polyp across sequential video frames, reducing false double-counting.
 - **Medical Segmentation Integration**: Designed to be compatible with Polyp-PVT (Pyramid Vision Transformer) for granular segmentation mask representations.
 - **Interactive Health-Tech Dashboard**: A fully featured and beautiful Streamlit interface presenting bounded video output, extracted keyframes, and severity tracking telemetry.
 - **AI Output Summaries**: Quick statistical metrics highlighting overall confidence, frames processed, and bounding representations.
@@ -21,7 +21,7 @@ PolypVision is an end-to-end computer vision and healthcare application designed
 ## Tech Stack 🛠️
 - **Frontend Environment**: Streamlit
 - **Computer Vision & Backend**: OpenCV, Ultralytics (YOLOv8)
-- **Object Tracking Model**: DeepSORT (`deep_sort_realtime`)
+- **Object Tracking Model**: BoT-SORT (Native YOLOv8)
 - **Data Toolkit**: Python, NumPy 
 
 ---
