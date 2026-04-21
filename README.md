@@ -1,3 +1,12 @@
+---
+title: PolypVision
+emoji: 🔬
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # PolypVision | Colonoscopy AI Assistant 🔬
 
 PolypVision is an end-to-end computer vision and healthcare application designed to detect and track colonoscopy polyps in real-time. It features a polished frontend UI built with Streamlit and a powerful object detection & tracking backend powered by YOLOv8 and DeepSORT.
