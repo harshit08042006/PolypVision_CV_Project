@@ -49,8 +49,8 @@ def main():
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     print(f"Video Info: {width}x{height} @ {fps}fps, Total Frames: {total_frames}")
     
-    # 4. Video Writer setup
-    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    # Use XVID - most compatible software encoder on Linux
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(opt.output_video, fourcc, fps, (width, height))
     
     frame_idx = 0
