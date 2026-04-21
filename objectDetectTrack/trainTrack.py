@@ -80,8 +80,8 @@ fps = cap.get(cv2.CAP_PROP_FPS)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-output_video_path = os.path.join(OUTPUT_DIR, "tracked_output.mp4")
-fourcc = cv2.VideoWriter_fourcc(*"avc1")
+# Use mp4v for the temporary output to avoid hardware encoder errors on Linux
+fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
 
 if not cap.isOpened():
