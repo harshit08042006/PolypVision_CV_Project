@@ -22,8 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose the port Streamlit runs on
-EXPOSE 8501
+EXPOSE 7860
 
 # Command to run the Streamlit app
-# Note: --server.address=0.0.0.0 is required for Docker
-CMD ["streamlit", "run", "PolypDetection_Streamlit_UI/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Note: --server.port 7860 is required for Hugging Face Docker Spaces
+CMD ["streamlit", "run", "PolypDetection_Streamlit_UI/app.py", "--server.port=7860", "--server.address=0.0.0.0"]
