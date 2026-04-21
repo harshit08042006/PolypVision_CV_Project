@@ -30,11 +30,17 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 # ══════════════════════════════════════════════════════════════
 
-MAIN_MODEL       = "llama-3.1-70b-versatile"
+# For Groq, we use the Llama 3.2 Vision model for MAIN_MODEL
+MAIN_MODEL       = "llama-3.2-11b-vision-preview" 
 GUARD_MODEL      = "llama-3.1-8b-instant"
-DEFAULT_REPORT   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "polyp_output", "polyp_report.json")
+
+# Robustly find the report path relative to this script's location
+THIS_DIR = Path(__file__).parent
+DEFAULT_REPORT   = str(THIS_DIR / "polyp_output" / "polyp_report.json")
+
 MAX_TOKENS       = 1024
-IMAGE_MAX_PX     = 1024            # resize large crops before sending to save tokens
+IMAGE_MAX_PX     = 1024  # resize large crops before sending to save tokens
+
 
 # ──────────────────────────────────────────────────────────────
 # SYSTEM PROMPT
@@ -59,9 +65,11 @@ Your role:
 def load_report(report_path: str) -> dict:
     path = Path(report_path)
     if not path.exists():
+        # Help the user debug if path is wrong on HF Spaces
+        abs_path = path.absolute()
         raise FileNotFoundError(
-            f"Report not found: {report_path}\n"
-            "Run trainTrack.py first to generate polyp_output/polyp_report.json"
+            f"Report not found at: {report_path} (Absolute: {abs_path})\n"
+            "Ensure trainTrack.py has finished and generated 'polyp_output/polyp_report.json'."
         )
     with open(path) as f:
         report = json.load(f)
@@ -105,26 +113,39 @@ def format_metadata(report: dict) -> str:
 # ──────────────────────────────────────────────────────────────
 # IMAGE HELPERS
 # ──────────────────────────────────────────────────────────────
-def load_all_crops(report: dict) -> dict[int, dict[str, str]]:
+def load_all_crops(report: dict, report_path: str) -> dict[int, dict[str, str]]:
     """
     Load every polyp's crop images and encode them as base64 strings.
-    Returns: { polyp_id: { 'best': '<base64>', 'largest': '<base64>' } }
+    Resolves image paths relative to the report file directory.
     """
     all_crops: dict[int, dict[str, str]] = {}
+    report_dir = Path(report_path).parent
 
     for p in report["polyps"]:
         pid   = p["polyp_id"]
         crops: dict[str, str] = {}
 
         for path_key, slot in [("best_crop_path", "best"), ("largest_crop_path", "largest")]:
-            img_path = p.get(path_key)
-            if img_path and Path(img_path).exists():
-                crops[slot] = encode_image(img_path)
+            img_path_raw = p.get(path_key)
+            if not img_path_raw:
+                continue
+
+            # In the report, path is stored as 'polyp_output/filename.jpg'
+            # We assume images are in the same folder as the report.
+            img_filename = os.path.basename(img_path_raw)
+            img_path = report_dir / img_filename
+
+            if img_path.exists():
+                crops[slot] = encode_image(str(img_path))
+            else:
+                # Fallback: try the raw path just in case
+                if Path(img_path_raw).exists():
+                    crops[slot] = encode_image(img_path_raw)
 
         if crops:
             all_crops[pid] = crops
         else:
-            print(f"[WARN] No crop images for Polyp {pid} — text-only for this polyp.")
+            print(f"[WARN] No crop images found for Polyp {pid} at {report_dir}")
 
     return all_crops
 
@@ -257,12 +278,12 @@ def print_polyp_menu(report: dict):
     print("═" * 65 + "\n")
 
 
-def interactive_session(client: openai.OpenAI, report: dict):
+def interactive_session(client: openai.OpenAI, report: dict, report_path: str):
     metadata_text = format_metadata(report)
     available_ids = [p["polyp_id"] for p in report["polyps"]]
 
     print("[INFO] Loading all polyp crop images...")
-    all_crops = load_all_crops(report)
+    all_crops = load_all_crops(report, report_path)
     print(f"[INFO] Crops loaded for polyp IDs: {sorted(all_crops.keys())}\n")
 
     overview_pid, overview_b64 = best_overview_crop(all_crops, report)
@@ -400,6 +421,9 @@ def query_vlm(user_text: str, history: list[dict] = None, report_path: str = DEF
     if history is None:
         history = []
 
+    if not API_KEY:
+        return "VLM Error: Groq API_KEY not found. Please set it in secrets or .env"
+
     try:
         report = load_report(report_path)
     except (FileNotFoundError, ValueError) as e:
@@ -413,11 +437,14 @@ def query_vlm(user_text: str, history: list[dict] = None, report_path: str = DEF
     )
 
     # Domain Guard
-    if not is_domain_relevant(client, user_text):
-        return OUT_OF_DOMAIN_REPLY
+    try:
+        if not is_domain_relevant(client, user_text):
+            return OUT_OF_DOMAIN_REPLY
+    except Exception as e:
+        return f"VLM Error: Domain guard failed. Check API key/connection: {e}"
 
     # Load context
-    all_crops = load_all_crops(report)
+    all_crops = load_all_crops(report, report_path)
     _, overview_b64 = best_overview_crop(all_crops, report)
     metadata_text = format_metadata(report)
 
@@ -434,7 +461,7 @@ def query_vlm(user_text: str, history: list[dict] = None, report_path: str = DEF
         )
         return reply
     except Exception as e:
-        return f"VLM Error: API call failed: {e}"
+        return f"VLM Error: AI inference failed: {e}"
 
 
 # ──────────────────────────────────────────────────────────────
@@ -457,7 +484,7 @@ def main():
     api_key=API_KEY,
     base_url="https://api.groq.com/openai/v1"
     )
-    interactive_session(client, report)
+    interactive_session(client, report, args.report)
 
 
 if __name__ == "__main__":
