@@ -81,8 +81,8 @@ width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 output_video_path = os.path.join(OUTPUT_DIR, "tracked_output.mp4")
-# Use XVID - most compatible software encoder on Linux
-fourcc = cv2.VideoWriter_fourcc(*"XVID")
+# Use mp4v - best compatible software encoder for .mp4 containers on Linux
+fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
 
 if not cap.isOpened():
