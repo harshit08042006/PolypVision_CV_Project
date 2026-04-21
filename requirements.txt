@@ -16,4 +16,3 @@ tqdm>=4.65.0
 python-dotenv
 groq
 openai
-timm

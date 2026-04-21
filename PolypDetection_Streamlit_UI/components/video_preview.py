@@ -25,7 +25,7 @@ PVT_OUTPUT_VIDEO = os.path.join(PVT_VIDEOS_DIR, "output_video.mp4")
 
 
 def _run_inference(cmd, cwd, is_pvt=False):
-    """Run an inference script as a subprocess and show progress + live terminal logs."""
+    """Run an inference script as a subprocess and show progress only (no UI logs)."""
     process = subprocess.Popen(
         cmd,
         cwd=cwd,
@@ -52,21 +52,11 @@ def _run_inference(cmd, cwd, is_pvt=False):
             </div>
         ''', unsafe_allow_html=True)
         progress_bar = st.progress(0, text="🛠️ Preparing AI Analysis...")
-        log_console = st.empty() # For live logs
-    
-    log_history = []
     
     for line in process.stdout:
         clean_line = line.rstrip()
-        if not clean_line: continue
-        
-        # Keep last 5 lines for the console
-        log_history.append(clean_line)
-        if len(log_history) > 5:
-            log_history.pop(0)
-            
-        # Update UI console
-        log_console.code("\n".join(log_history), language="bash")
+        # Still print to terminal for debugging
+        print(f"[AI Backend] {clean_line}")
 
         if is_pvt:
             # PVT Progress: "Processing frame 10/100"
