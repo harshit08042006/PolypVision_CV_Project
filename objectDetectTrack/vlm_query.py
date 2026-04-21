@@ -30,9 +30,9 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 # ══════════════════════════════════════════════════════════════
 
-MAIN_MODEL       = "meta-llama/llama-4-scout-17b-16e-instruct"
+MAIN_MODEL       = "llama-3.1-70b-versatile"
 GUARD_MODEL      = "llama-3.1-8b-instant"
-DEFAULT_REPORT   = str(Path(__file__).parent / "polyp_output" / "polyp_report.json")
+DEFAULT_REPORT   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "polyp_output", "polyp_report.json")
 MAX_TOKENS       = 1024
 IMAGE_MAX_PX     = 1024            # resize large crops before sending to save tokens
 
@@ -46,17 +46,12 @@ colonoscopy video processed by an AI detection pipeline (YOLOv8 + DeepSORT track
 Your role:
 - Answer questions about the entire colonoscopy session — overall findings, comparisons across polyps, session-level statistics, and individual polyp details.
 - Describe visual characteristics visible in polyp crop images (shape, texture, color, surface pattern, borders, size relative to frame).
-- Explain detection statistics (confidence scores, bounding box area, frame counts, tracking duration) in clear clinical language.
+- Explain detection statistics (confidence scores, bounding box area, frame counts, tracking duration) in clear clinical language. When asked for numerical data like "Area", look specifically at the 'Max area' or 'Mean area' fields in the provided report text.
+- Be precise: If the report says a polyp is 45000 px², state that exact number.
 - Summarize or compare polyps when asked (e.g. "which is largest?", "how many were found?", "describe all polyps").
-- Answer user queries about colonoscopy and polyps.
-- Answer user queries honestly about their colonoscopy and the concerns of detected polyps and possible treatments.
-- Give suggestion to doctors on how to proceed with a polyp surgically.
-- Help clinicians understand what the AI pipeline's output means for the procedure.
-- Give a balanced opinion on visual risk level.
-
-Rules:
+- Stay strictly grounded in the image AND the technical metadata provided below. Do not say information is missing if it is in the report block.
 - Always end with: "Final clinical decision must be made by a gastroenterologist with full video review and biopsy results."
-- Stay strictly grounded in the image and metadata. Do not hallucinate locations or information not provided."""
+"""
 
 # ──────────────────────────────────────────────────────────────
 # REPORT LOADER
