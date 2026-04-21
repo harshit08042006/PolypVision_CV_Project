@@ -31,8 +31,11 @@ API_KEY = os.getenv("API_KEY")
 # ══════════════════════════════════════════════════════════════
 
 # For Groq, we use the Llama 3.2 Vision model for MAIN_MODEL
-MAIN_MODEL       = "llama-3.2-11b-vision-preview" 
+
+MAIN_MODEL       = "meta-llama/llama-4-scout-17b-16e-instruct"
 GUARD_MODEL      = "llama-3.1-8b-instant"
+
+
 
 # Robustly find the report path relative to this script's location
 THIS_DIR = Path(__file__).parent
