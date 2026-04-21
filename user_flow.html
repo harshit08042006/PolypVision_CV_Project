@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Diagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 p-10 font-sans flex items-center justify-center min-h-screen">
+
+    <div class="flex flex-col lg:flex-row items-center gap-6 max-w-7xl mx-auto">
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 w-64 text-center">
+            <div class="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">👤</div>
+            <h3 class="font-bold text-slate-800">Login / Signup</h3>
+            <p class="text-xs text-slate-500 mt-2">User authentication</p>
+        </div>
+
+        <div class="text-slate-300 text-2xl hidden lg:block">➔</div>
+
+        <div class="bg-white p-6 rounded-xl shadow-md border border-blue-200 w-64 text-center">
+            <div class="bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">☁️</div>
+            <h3 class="font-bold text-slate-800">Dashboard</h3>
+            <p class="text-xs text-slate-500 mt-2">Upload colonoscopy video securely</p>
+        </div>
+
+        <div class="text-slate-300 text-2xl hidden lg:block">➔</div>
+
+        <div class="bg-slate-100 p-6 rounded-xl border-2 border-dashed border-slate-300 w-full lg:w-auto relative">
+            <span class="absolute -top-3 left-4 bg-slate-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">Computer Vision Pipeline</span>
+            <div class="flex flex-col sm:flex-row gap-4 items-center">
+                <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 text-center text-sm font-semibold text-slate-700 w-28">Video</div>
+                <div class="text-slate-400">→</div>
+                <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 text-center text-sm font-semibold text-slate-700 w-28">Detection</div>
+                <div class="text-slate-400">→</div>
+                <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 text-center text-sm font-semibold text-slate-700 w-28">Tracking</div>
+                <div class="text-slate-400">→</div>
+                <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200 text-center text-sm font-semibold text-slate-700 w-28">Segmentation</div>
+            </div>
+        </div>
+
+        <div class="text-slate-300 text-2xl hidden lg:block">➔</div>
+
+        <div class="flex flex-col gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-emerald-500 w-72">
+                <h3 class="font-bold text-slate-800 mb-2">Results Page</h3>
+                <ul class="text-xs text-slate-600 space-y-1 list-disc pl-4">
+                    <li>Polyp Count & Metrics</li>
+                    <li>Augmented Video Player</li>
+                    <li>Interactive Registry List</li>
+                </ul>
+            </div>
+            
+            <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 rounded-xl shadow-md text-white w-72">
+                <h3 class="font-bold mb-2 flex items-center gap-2">✨ VLM Chat</h3>
+                <p class="text-xs text-purple-100">Ask the Vision-Language Model detailed questions about the colonoscopy and specific polyps.</p>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

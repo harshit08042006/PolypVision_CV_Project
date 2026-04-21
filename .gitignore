@@ -1,0 +1,24 @@
+# Mac system files
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.env
+
+# YOLO training and caches
+*.cache
+*/runs/detect/*/train_batch*
+*/runs/detect/*/val_batch*
+*/runs/detect/*/*.png
+*/runs/detect/*/*.jpg
+**/polyp_output/original/*
+**/polyp_output/frames/*
+**/polyp-pvt/videos/*
+**/polyp-pvt/Figs/*
+objectDetectTrack/openh264-1.8.0-win64.dll
+objectDetectTrack/openh264-1.8.0-win64.dll

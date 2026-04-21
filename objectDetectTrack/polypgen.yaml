@@ -1,0 +1,7 @@
+path: polypgen_yolo
+
+train: images/train
+val: images/validation
+
+nc: 1
+names: ['polyp']

@@ -1,0 +1,17 @@
+# UI & Core
+streamlit>=1.35
+Pillow>=10.0
+numpy
+opencv-python-headless
+
+# YOLO & Tracking (New Native Method)
+ultralytics
+lapx
+scipy
+
+# Segmentation & VLM
+torch>=2.0.0
+torchvision>=0.15.0
+tqdm>=4.65.0
+python-dotenv
+groq
