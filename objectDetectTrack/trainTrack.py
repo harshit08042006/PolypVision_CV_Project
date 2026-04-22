@@ -7,6 +7,7 @@ from datetime import datetime
 from ultralytics import YOLO
 import os
 import sys
+import subprocess
 
 # ====================== CRITICAL OpenH264 DLL FIX ======================
 if os.name == 'nt':  # Windows only
@@ -204,6 +205,36 @@ while cap.isOpened():
 cap.release()
 out.release()
 print(f"[INFO] Finished reading video. Total frames: {frame_idx}")
+
+# =========================================================
+# STEP 3.5: Web Compatibility Conversion (H.264)
+# =========================================================
+def convert_to_h264(input_path):
+    """Re-encode video to H.264 for browser compatibility."""
+    temp_path = input_path.replace(".mp4", "_temp.mp4")
+    os.rename(input_path, temp_path)
+    
+    print(f"[INFO] Converting {input_path} to browser-compatible H.264...")
+    try:
+        # Use ffmpeg to convert to H.264 (libx264) with yuv420p pixel format
+        # -y: overwrite output
+        # -crf 23: decent quality
+        # -preset fast: balance speed and compression
+        cmd = [
+            "ffmpeg", "-y", "-i", temp_path,
+            "-vcodec", "libx264", "-crf", "23", "-pix_fmt", "yuv420p",
+            "-preset", "fast", input_path
+        ]
+        subprocess.run(cmd, check=True, capture_output=True)
+        os.remove(temp_path)
+        print(f"[SUCCESS] Web-compatible video saved: {input_path}")
+    except Exception as e:
+        print(f"[ERROR] FFmpeg conversion failed: {e}")
+        # Restore the original file if conversion fails
+        if os.path.exists(temp_path):
+            os.rename(temp_path, input_path)
+
+convert_to_h264(output_video_path)
 
 # =========================================================
 # STEP 4–6: Your original merging + final filters + saving

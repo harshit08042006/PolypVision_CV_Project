@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import os, argparse
+import subprocess
 from lib.pvt import PolypPVT
 import cv2
 import torchvision.transforms as transforms
@@ -49,6 +50,7 @@ def main():
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     print(f"Video Info: {width}x{height} @ {fps}fps, Total Frames: {total_frames}")
     
+    # 4. Video Writer setup
     # Use mp4v - best compatible software encoder for .mp4 containers on Linux
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(opt.output_video, fourcc, fps, (width, height))
@@ -103,7 +105,26 @@ def main():
             
     cap.release()
     out.release()
-    print(f"Video inference completed. Saved output to: {opt.output_video}")
+    print(f"Video inference completed. Saved raw output to: {opt.output_video}")
+
+    # ── Web Compatibility Conversion (H.264) ──────────────────────────
+    temp_path = opt.output_video.replace(".mp4", "_temp.mp4")
+    os.rename(opt.output_video, temp_path)
+    
+    print(f"[INFO] Converting {opt.output_video} to browser-compatible H.264...")
+    try:
+        cmd = [
+            "ffmpeg", "-y", "-i", temp_path,
+            "-vcodec", "libx264", "-crf", "23", "-pix_fmt", "yuv420p",
+            "-preset", "fast", opt.output_video
+        ]
+        subprocess.run(cmd, check=True, capture_output=True)
+        os.remove(temp_path)
+        print(f"[SUCCESS] Web-compatible segmentation video saved: {opt.output_video}")
+    except Exception as e:
+        print(f"[ERROR] FFmpeg conversion failed: {e}")
+        if os.path.exists(temp_path):
+            os.rename(temp_path, opt.output_video)
 
 if __name__ == '__main__':
     main()
