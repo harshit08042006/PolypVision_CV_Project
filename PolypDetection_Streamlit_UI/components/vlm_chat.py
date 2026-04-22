@@ -4,7 +4,7 @@ from vlm_query import query_vlm
 
 
 def _on_send():
-    """Callback to handle sending a message and clearing the input."""
+    """Callback to handle sending a message and clearing the input correctly."""
     u_input = st.session_state.vlm_input_text
     if u_input and u_input.strip():
         st.session_state.vlm_current_query = u_input
@@ -19,8 +19,6 @@ def render():
         st.session_state.chat_messages = []
     if "vlm_busy" not in st.session_state:
         st.session_state.vlm_busy = False
-    if "vlm_current_query" not in st.session_state:
-        st.session_state.vlm_current_query = ""
 
     # Inject specific styles for THIS component's button
     st.markdown("""
@@ -87,33 +85,37 @@ def render():
         st.markdown('<div class="vlm-input-container">', unsafe_allow_html=True)
         st.text_input(
             "Ask the VLM",
-            placeholder="Ask: What can be done now?" if not is_busy else "Assistant is thinking...",
+            placeholder="Ask: What can be done now?" if not is_busy else "Processing...",
             key="vlm_input_text",
             label_visibility="collapsed",
             disabled=is_busy,
-            on_change=_on_send # Trigger when Enter is pressed
         )
         st.markdown('</div>', unsafe_allow_html=True)
         
     with col_send:
+        # The button is now inside the vlm-chat-container div (or next to it)
+        # We use a button without on_click to handle flow easily with rerun
         btn_label = "✈ Send" if not is_busy else "..."
-        st.button(btn_label, key="vlm_send", use_container_width=True, disabled=is_busy, on_click=_on_send)
+        if st.button(btn_label, key="vlm_send", width='stretch', disabled=is_busy):
+            user_input = st.session_state.vlm_input_text
+            if user_input.strip():
+                st.session_state.vlm_busy = True
+                st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Processing logic ──
+    # handle processing logic
     if st.session_state.vlm_busy:
-        user_input = st.session_state.vlm_current_query
-        if user_input:
-            st.session_state.chat_messages.append({"role": "user", "content": user_input})
+        user_input = st.session_state.vlm_input_text
+        st.session_state.chat_messages.append({"role": "user", "content": user_input})
+        
+        try:
+            history = st.session_state.chat_messages[:-1]
+            response = query_vlm(user_input, history=history)
+        except Exception as e:
+            response = f"[Error contacting VLM: {e}]"
             
-            try:
-                history = st.session_state.chat_messages[:-1]
-                response = query_vlm(user_input, history=history)
-            except Exception as e:
-                response = f"[Error contacting VLM: {e}]"
-                
-            st.session_state.chat_messages.append({"role": "assistant", "content": response})
-            st.session_state.vlm_current_query = ""
-            st.session_state.vlm_busy = False
-            st.rerun()
+        st.session_state.chat_messages.append({"role": "assistant", "content": response})
+        st.session_state.vlm_input_text = ""
+        st.session_state.vlm_busy = False
+        st.rerun()
