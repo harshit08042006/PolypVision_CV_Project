@@ -91,7 +91,7 @@ def render():
         st.button(
             "Open Analysis Workspace →",
             key="open_workspace",
-            use_container_width=True,
+            width='stretch',
             type="primary",
             on_click=_go_to_dashboard,
         )

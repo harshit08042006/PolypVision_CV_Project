@@ -29,7 +29,7 @@ def render():
     with col3:
         # Pushing the button to the far right and aligning it vertically
         st.markdown('<div class="back-btn" style="text-align:right; margin-top:14px;">', unsafe_allow_html=True)
-        if st.button("← Back", key="back_btn", use_container_width=True):
+        if st.button("← Back", key="back_btn", width='stretch'):
             st.session_state.page = "landing"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)

@@ -123,7 +123,7 @@ def render():
 
         with tab1:
             st.info("Fast object detection & tracking (YOLOv8 + BoT-SORT). Takes ~2 mins.")
-            if st.button("Run YOLO Detection", type="primary", use_container_width=True):
+            if st.button("Run YOLO Detection", type="primary", width='stretch'):
                 # Save input
                 tmp_input = os.path.join(BACKEND_DIR, "uploaded_input.mp4")
                 with open(tmp_input, "wb") as f: f.write(uploaded.getbuffer())
@@ -139,7 +139,7 @@ def render():
 
         with tab2:
             st.warning("Advanced pixel-level segmentation. **Takes ~5 mins.**")
-            if st.button("Run PVT Segmentation", type="primary", use_container_width=True):
+            if st.button("Run PVT Segmentation", type="primary", width='stretch'):
                 st.session_state.segmentation_done = False
                 with open(PVT_INPUT_VIDEO, "wb") as f: f.write(uploaded.getbuffer())
                 
@@ -186,10 +186,11 @@ def _render_video_card(title, video_path, download_name):
         unsafe_allow_html=True,
     )
 
-    # Use a binary read to bypass Streamlit's internal cache if needed, 
-    # though st.video(file_path) is generally preferred on servers.
-    with open(video_path, "rb") as vf:
-        st.video(vf.read())
+    # Use file path directly if it exists
+    if os.path.exists(video_path):
+        st.video(video_path)
+    else:
+        st.warning(f"Video file not found: {video_path}")
 
     st.markdown(
         """
@@ -207,5 +208,5 @@ def _render_video_card(title, video_path, download_name):
             data=vf,
             file_name=download_name,
             mime="video/mp4",
-            use_container_width=True,
+            width='stretch',
         )

@@ -19,6 +19,12 @@ def render():
         st.session_state.chat_messages = []
     if "vlm_busy" not in st.session_state:
         st.session_state.vlm_busy = False
+    if "vlm_current_query" not in st.session_state:
+        st.session_state.vlm_current_query = ""
+    if "vlm_input_text" not in st.session_state:
+        st.session_state.vlm_input_text = ""
+    if "vlm_clear_input" not in st.session_state:
+        st.session_state.vlm_clear_input = False
 
     # Inject specific styles for THIS component's button
     st.markdown("""
@@ -80,42 +86,62 @@ def render():
     # ── Input row ──
     col_input, col_send = st.columns([5, 2])
     is_busy = st.session_state.vlm_busy
-    
+
     with col_input:
         st.markdown('<div class="vlm-input-container">', unsafe_allow_html=True)
-        st.text_input(
+        # Clear input if requested
+        input_value = "" if st.session_state.vlm_clear_input else st.session_state.vlm_input_text
+        user_text = st.text_input(
             "Ask the VLM",
+            value=input_value,
             placeholder="Ask: What can be done now?" if not is_busy else "Processing...",
             key="vlm_input_text",
             label_visibility="collapsed",
             disabled=is_busy,
         )
         st.markdown('</div>', unsafe_allow_html=True)
-        
+
     with col_send:
-        # The button is now inside the vlm-chat-container div (or next to it)
-        # We use a button without on_click to handle flow easily with rerun
         btn_label = "✈ Send" if not is_busy else "..."
-        if st.button(btn_label, key="vlm_send", width='stretch', disabled=is_busy):
+        if st.button(btn_label, key="vlm_send", disabled=is_busy):
             user_input = st.session_state.vlm_input_text
             if user_input.strip():
+                st.session_state.vlm_current_query = user_input  # Save query before clearing
                 st.session_state.vlm_busy = True
+                st.session_state.vlm_clear_input = False  # Will set to True after response
+                print(f"[VLM CHAT] Button clicked - Query saved: {user_input[:30]}...")
                 st.rerun()
+        else:
+            # If button wasn't clicked but we're not busy and clear flag is set, reset it
+            if not is_busy and st.session_state.vlm_clear_input:
+                st.session_state.vlm_clear_input = False
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # handle processing logic
-    if st.session_state.vlm_busy:
-        user_input = st.session_state.vlm_input_text
-        st.session_state.chat_messages.append({"role": "user", "content": user_input})
+    # ── Handle VLM response (separate from UI rendering) ──
+    if st.session_state.vlm_busy and st.session_state.vlm_current_query:
+        user_query = st.session_state.vlm_current_query
+        print(f"[VLM CHAT] Processing query: {user_query[:50]}...")
+        st.session_state.chat_messages.append({"role": "user", "content": user_query})
         
-        try:
-            history = st.session_state.chat_messages[:-1]
-            response = query_vlm(user_input, history=history)
-        except Exception as e:
-            response = f"[Error contacting VLM: {e}]"
-            
+        with st.spinner("🤖 VLM is thinking..."):
+            try:
+                print("[VLM CHAT] Building history...")
+                history = st.session_state.chat_messages[:-1]
+                print(f"[VLM CHAT] Calling query_vlm with history length: {len(history)}")
+                response = query_vlm(user_query, history=history)
+                print(f"[VLM CHAT] Got response: {response[:100]}...")
+                st.success("✅ VLM responded!")
+            except Exception as e:
+                print(f"[VLM CHAT] Exception during query: {e}")
+                import traceback
+                traceback.print_exc()
+                response = f"❌ Error: {str(e)}"
+        
+        print(f"[VLM CHAT] Adding response to chat: {response[:50]}...")
         st.session_state.chat_messages.append({"role": "assistant", "content": response})
-        st.session_state.vlm_input_text = ""
+        st.session_state.vlm_current_query = ""
         st.session_state.vlm_busy = False
+        st.session_state.vlm_clear_input = True  # Flag to clear input on next render
+        print("[VLM CHAT] About to rerun...")
         st.rerun()

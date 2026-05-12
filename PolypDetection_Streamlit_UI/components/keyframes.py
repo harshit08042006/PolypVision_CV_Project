@@ -64,7 +64,7 @@ def render():
 
         col_img, col_info = st.columns([1, 2])
         with col_img:
-            st.image(thumb, use_container_width=True)
+            st.image(thumb, width='stretch')
         with col_info:
             st.markdown(
                 f"""
@@ -76,7 +76,7 @@ def render():
                 """,
                 unsafe_allow_html=True,
             )
-            if st.button("View Details", key=f"kf_btn_{i}", use_container_width=True):
+            if st.button("View Details", key=f"kf_btn_{i}", width='stretch'):
                 _show_metadata(kf)
 
         if i < len(KEYFRAMES) - 1:

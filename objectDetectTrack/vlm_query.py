@@ -41,6 +41,19 @@ GUARD_MODEL      = "llama-3.1-8b-instant"
 THIS_DIR = Path(__file__).parent
 DEFAULT_REPORT   = str(THIS_DIR / "polyp_output" / "polyp_report.json")
 
+def _get_report_path():
+    """Try multiple paths to find the polyp report."""
+    candidates = [
+        Path(__file__).parent / "polyp_output" / "polyp_report.json",
+        Path.cwd() / "objectDetectTrack" / "polyp_output" / "polyp_report.json",
+        Path.cwd() / "polyp_output" / "polyp_report.json",
+    ]
+    for path in candidates:
+        if path.exists():
+            print(f"[DEBUG] Found report at: {path}")
+            return str(path)
+    return DEFAULT_REPORT
+
 MAX_TOKENS       = 1024
 IMAGE_MAX_PX     = 1024  # resize large crops before sending to save tokens
 
@@ -48,18 +61,27 @@ IMAGE_MAX_PX     = 1024  # resize large crops before sending to save tokens
 # ──────────────────────────────────────────────────────────────
 # SYSTEM PROMPT
 # ──────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are an expert colonoscopy polyp analysis assistant.
-You have been provided with the complete detection report and polyp crop images from a
-colonoscopy video processed by an AI detection pipeline (YOLOv8 + DeepSORT tracking).
+SYSTEM_PROMPT = """You are an expert colonoscopy polyp analysis assistant with strict accuracy requirements.
+
+CRITICAL RULES:
+1. **ONLY report what is in the provided data.** Do NOT guess, estimate, or hallucinate polyp counts.
+2. **Always cite the exact numbers from the report.** If the report says 1 polyp, say exactly 1 polyp.
+3. **Cross-check polyp counts** against both the header and the individual polyp entries.
+4. **Never contradict the report.** The report is your source of truth.
 
 Your role:
-- Answer questions about the entire colonoscopy session — overall findings, comparisons across polyps, session-level statistics, and individual polyp details.
-- Describe visual characteristics visible in polyp crop images (shape, texture, color, surface pattern, borders, size relative to frame).
-- Explain detection statistics (confidence scores, bounding box area, frame counts, tracking duration) in clear clinical language. When asked for numerical data like "Area", look specifically at the 'Max area' or 'Mean area' fields in the provided report text.
-- Be precise: If the report says a polyp is 45000 px², state that exact number.
-- Summarize or compare polyps when asked (e.g. "which is largest?", "how many were found?", "describe all polyps").
-- Stay strictly grounded in the image AND the technical metadata provided below. Do not say information is missing if it is in the report block.
-- Always end with: "Final clinical decision must be made by a gastroenterologist with full video review and biopsy results."
+- Answer questions about the colonoscopy session using ONLY the provided detection report and polyp crop images.
+- Describe visual characteristics visible in polyp crop images (shape, texture, color, surface pattern, borders).
+- Explain detection statistics (confidence scores, area measurements, frame counts, tracking duration) in clear clinical language.
+- Be precise and never hallucinate: If the report says 1 polyp with 90115 px² max area, state exactly that.
+- Summarize or compare polyps when asked, but ONLY use data present in the report.
+- Always end responses with: "Final clinical decision must be made by a gastroenterologist with full video review and biopsy results."
+
+DO NOT:
+- Invent polyps that are not in the report
+- Guess at numbers
+- Add clinical opinions not grounded in the data
+- Suggest procedures or treatments
 """
 
 # ──────────────────────────────────────────────────────────────
@@ -88,28 +110,46 @@ def load_report(report_path: str) -> dict:
 
 def format_metadata(report: dict) -> str:
     """Convert the JSON report into a readable text block injected into every prompt."""
+    polyp_count = len(report['polyps'])
     lines = [
-        "=== COLONOSCOPY POLYP DETECTION REPORT ===",
-        f"Video          : {report.get('video', 'N/A')}",
-        f"Total frames   : {report.get('total_frames', 'N/A')}",
-        f"Processed at   : {report.get('processed_at', 'N/A')}",
-        f"Polyps detected: {len(report['polyps'])}",
+        "=" * 60,
+        "COLONOSCOPY POLYP DETECTION REPORT",
+        "=" * 60,
+        f"📊 TOTAL POLYPS DETECTED: {polyp_count}",
+        f"Video File: {report.get('video', 'N/A')}",
+        f"Total Frames Analyzed: {report.get('total_frames', 'N/A')}",
+        f"Analysis Timestamp: {report.get('processed_at', 'N/A')}",
+        "",
+        "⚠️ IMPORTANT: This report contains data for EXACTLY {0} polyp(s). No more, no less.".format(polyp_count),
         "",
     ]
-    for p in report["polyps"]:
+    
+    if polyp_count == 0:
+        lines.append("❌ NO POLYPS DETECTED in this colonoscopy session.")
+        return "\n".join(lines)
+    
+    lines.append(f"📋 POLYP DETAILS ({polyp_count} total):")
+    lines.append("-" * 60)
+    
+    for i, p in enumerate(report["polyps"], 1):
         duration = p["last_frame"] - p["first_frame"] + 1
         lines += [
-            f"--- Polyp ID {p['polyp_id']} ---",
-            f"  First seen      : Frame {p['first_frame']}",
-            f"  Last seen       : Frame {p['last_frame']}",
-            f"  Duration        : {duration} frames",
-            f"  Unique frames   : {p['frames_seen']}",
-            f"  Best confidence : {p['best_conf']} (frame {p['best_frame']})",
-            f"  Max area        : {p['max_area_px2']} px²  (frame {p['largest_frame']})",
-            f"  Mean area       : {p['mean_area_px2']} px²",
-            f"  Median area     : {p['median_area_px2']} px²",
-            "",
+            f"",
+            f"[POLYP #{i} of {polyp_count}] ID: {p['polyp_id']}",
+            f"  ├─ Detection Timeline: Frame {p['first_frame']} → Frame {p['last_frame']} (Duration: {duration} frames)",
+            f"  ├─ Visible in: {p['frames_seen']} unique frames",
+            f"  ├─ Best Detection: Frame {p['best_frame']} (Confidence: {p['best_conf']:.1%})",
+            f"  ├─ Size - Max: {p['max_area_px2']} px² | Mean: {p['mean_area_px2']:.0f} px² | Median: {p['median_area_px2']:.0f} px²",
+            f"  ├─ Images: Best crop = polyp_{p['polyp_id']}_best_crop.jpg | Largest crop = polyp_{p['polyp_id']}_largest_crop.jpg",
+            f"  └─ Tracking Quality (Temporal IoU): {p.get('temporal_iou', 'N/A')}",
         ]
+    
+    lines += [
+        "",
+        "=" * 60,
+        f"SUMMARY: {polyp_count} polyp(s) detected. Report data is complete and accurate.",
+        "=" * 60,
+    ]
     return "\n".join(lines)
 
 
@@ -416,7 +456,7 @@ def interactive_session(client: openai.OpenAI, report: dict, report_path: str):
         history.append(    {"role": "assistant", "content": reply})
 
 
-def query_vlm(user_text: str, history: list[dict] = None, report_path: str = DEFAULT_REPORT) -> str:
+def query_vlm(user_text: str, history: list[dict] = None, report_path: str = None) -> str:
     """
     Standalone function for Streamlit integration.
     Handles report loading, API client initialization, and domain guarding.
@@ -424,14 +464,23 @@ def query_vlm(user_text: str, history: list[dict] = None, report_path: str = DEF
     if history is None:
         history = []
 
+    # Use dynamic path resolution if not specified
+    if report_path is None:
+        report_path = _get_report_path()
+    
+    print(f"[VLM DEBUG] Using report path: {report_path}")
+    print(f"[VLM DEBUG] User text: {user_text[:50]}...")
+
     if not API_KEY:
         return "VLM Error: Groq API_KEY not found. Please set it in secrets or .env"
 
     try:
         report = load_report(report_path)
     except (FileNotFoundError, ValueError) as e:
+        print(f"[VLM DEBUG] Report load error: {e}")
         return f"VLM Error: {e}"
     except Exception as e:
+        print(f"[VLM DEBUG] Unexpected report error: {e}")
         return f"VLM Error: Unexpected error loading report: {e}"
 
     client = openai.OpenAI(
@@ -441,19 +490,32 @@ def query_vlm(user_text: str, history: list[dict] = None, report_path: str = DEF
 
     # Domain Guard
     try:
+        print("[VLM DEBUG] Running domain guard...")
         if not is_domain_relevant(client, user_text):
+            print("[VLM DEBUG] Query not domain relevant")
             return OUT_OF_DOMAIN_REPLY
+        print("[VLM DEBUG] Query is domain relevant")
     except Exception as e:
+        print(f"[VLM DEBUG] Domain guard error: {e}")
         return f"VLM Error: Domain guard failed. Check API key/connection: {e}"
 
     # Load context
-    all_crops = load_all_crops(report, report_path)
-    _, overview_b64 = best_overview_crop(all_crops, report)
-    metadata_text = format_metadata(report)
+    try:
+        print("[VLM DEBUG] Loading crops...")
+        all_crops = load_all_crops(report, report_path)
+        _, overview_b64 = best_overview_crop(all_crops, report)
+        metadata_text = format_metadata(report)
+        print(f"[VLM DEBUG] Loaded {len(all_crops)} polyp crops")
+    except Exception as e:
+        print(f"[VLM DEBUG] Error loading crops: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"VLM Error: Failed to load crops: {e}"
 
     is_first = (len(history) == 0)
 
     try:
+        print("[VLM DEBUG] Calling chat function...")
         reply = chat(
             client=client,
             history=history,
@@ -462,8 +524,12 @@ def query_vlm(user_text: str, history: list[dict] = None, report_path: str = DEF
             metadata_text=metadata_text,
             is_first_turn=is_first,
         )
+        print(f"[VLM DEBUG] Got reply: {reply[:100]}...")
         return reply
     except Exception as e:
+        print(f"[VLM DEBUG] Chat error: {e}")
+        import traceback
+        traceback.print_exc()
         return f"VLM Error: AI inference failed: {e}"
 
 
